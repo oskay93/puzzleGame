@@ -1,0 +1,321 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package gamePackage;
+
+/*
+ * #%L
+ * UysalProject
+ * %%
+ * Copyright (C) 2016 Puzzle Inc.
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
+import java.sql.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * This class contains database connection for high scores and shows high score
+ * table.
+ *
+ * @author Oskay
+ */
+public class Highscore extends javax.swing.JFrame {
+
+    Logger log = LoggerFactory.getLogger(Highscore.class);
+
+    public String username = Main.username.toLowerCase();
+
+    /**
+     * Creates new form Highscore
+     */
+    public Highscore() {
+        initComponents();
+        this.setLocationRelativeTo(null);
+        this.setResizable(false);
+        getScore();
+    }
+    Connection con;
+    Statement st;
+
+    /**
+     * It opens new database connection.
+     *
+     * @return
+     */
+    public Connection openConnection() {
+        try {
+            DriverManager.registerDriver(new oracle.jdbc.OracleDriver());
+            con = DriverManager.getConnection("jdbc:oracle:thin:@db.inf.unideb.hu:1521:ora11g", "ENG_EQXIHU", "kassai");
+            st = con.createStatement();
+            log.info("Connection Opened!");
+            createTable();
+        } catch (SQLException ex) {
+            log.error("Connection Open Error: " + ex);
+        }
+        return con;
+    }
+
+    /**
+     * It closes database connection.
+     *
+     */
+    public void closeConnection() {
+        try {
+            con.close();
+            log.info("Connection Closed!");
+        } catch (SQLException ex) {
+            log.error("Connection Close Error: " + ex);
+        }
+    }
+
+    /**
+     * Creates new table in database, if there exists a table with same name
+     * then doesn't create new one.
+     */
+    public void createTable() {
+        try {
+            st.executeUpdate("CREATE TABLE SCOREDATA" + "(username VARCHAR2(10)" + ", score NUMBER(4))");
+            log.info("Table Created!");
+        } catch (SQLException ex) {
+            if (ex.getErrorCode() == 955) {
+                //log.error("Table Name Already Exists");
+            } else {
+                log.error("Error While Creating New Table: " + ex);
+            }
+        }
+
+    }
+
+    /**
+     * Deletes table from database.
+     */
+    public void deleteTable() {
+
+        openConnection();
+
+        try {
+            st.executeUpdate("DROP TABLE SCOREDATA");
+            log.info("Table Deleted!");
+        } catch (SQLException ex) {
+            log.error("Couldn't Delete The Table: " + ex);
+        }
+
+        closeConnection();
+    }
+
+    /**
+     * Add score to the database.
+     */
+    public void addScore() {
+
+        openConnection();
+
+        try {
+            PreparedStatement ps = con.prepareStatement("INSERT INTO SCOREDATA (username, score) VALUES(?, ?)");
+            ps.setString(1, Main.username);
+            ps.setInt(2, RuleManager.score);
+            ps.executeUpdate();
+            log.info("Score Successful Added!");
+        } catch (SQLException ex) {
+            log.error("Score Could Not Be Added: " + ex);
+        }
+
+        closeConnection();
+    }
+
+    /**
+     * Read data(s) from database and shows them in the table.
+     */
+    public void getScore() {
+        openConnection();
+
+        try {
+
+            createTable();
+
+        } catch (Exception e) {
+        }
+
+        ResultSet rs;
+        String tempString;
+        int tempScore;
+        try {
+            rs = st.executeQuery("SELECT * FROM SCOREDATA ORDER BY score DESC");
+            int i = 0;
+            while (rs.next()) {
+                tempString = rs.getString(1);
+                scoreTable.getModel().setValueAt(tempString, i, 0);
+                tempScore = rs.getInt(2);
+                scoreTable.getModel().setValueAt(tempScore, i, 1);
+                i++;
+            }
+            rs.close();
+        } catch (SQLException ex) {
+            log.error("getScore() Error: " + ex);
+        }
+        closeConnection();
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jScrollPane1 = new javax.swing.JScrollPane();
+        scoreTable = new javax.swing.JTable();
+        jButton1 = new javax.swing.JButton();
+        backMenuButton = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        scoreTable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null},
+                {null, null},
+                {null, null},
+                {null, null},
+                {null, null},
+                {null, null},
+                {null, null},
+                {null, null},
+                {null, null},
+                {null, null}
+            },
+            new String [] {
+                "Username", "Score"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.String.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        jScrollPane1.setViewportView(scoreTable);
+        if (scoreTable.getColumnModel().getColumnCount() > 0) {
+            scoreTable.getColumnModel().getColumn(0).setResizable(false);
+            scoreTable.getColumnModel().getColumn(1).setResizable(false);
+        }
+
+        jButton1.setText("Delete All Datas In Database");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
+        backMenuButton.setText("Go To Main Menu");
+        backMenuButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                backMenuButtonActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(backMenuButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
+                .addComponent(jButton1)
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButton1)
+                    .addComponent(backMenuButton))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 269, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        deleteTable();
+        getScore();
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void backMenuButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backMenuButtonActionPerformed
+        this.setVisible(false);
+        new Main().setVisible(true);
+    }//GEN-LAST:event_backMenuButtonActionPerformed
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(Highscore.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(Highscore.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(Highscore.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(Highscore.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new Highscore().setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton backMenuButton;
+    private javax.swing.JButton jButton1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTable scoreTable;
+    // End of variables declaration//GEN-END:variables
+}
